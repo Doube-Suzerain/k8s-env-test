@@ -1,0 +1,13 @@
+---
+# ConfigMap: 存储测试脚本
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-test-scripts
+  namespace: default
+data:
+  # 挂载到容器内的脚本路径
+  check_env.sh: |
+    #!/bin/bash
+    # 此内容由 ConfigMap 注入，实际内容在脚本文件中
+    # 由于脚本较长，建议使用 Volume 挂载脚本目录

@@ -1,0 +1,47 @@
+---
+# Job 5: 报告汇总
+# 收集所有测试结果并生成统一报告
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: env-test-report
+  namespace: default
+spec:
+  # 确保在其他测试完成后运行
+  # 可以使用 kubectl wait 或手动触发
+  template:
+    metadata:
+      labels:
+        app: env-test-report
+    spec:
+      volumes:
+      - name: scripts
+        hostPath:
+          path: /path/to/k8s-env-test/scripts  # 替换为实际路径
+      - name: results
+        hostPath:
+          path: /tmp/env-test-results
+      containers:
+      - name: reporter
+        image: sglang:v0.5.7
+        imagePullPolicy: IfNotPresent
+        command: ["/usr/bin/python3", "/scripts/collect_results.py"]
+        env:
+        - name: RESULTS_DIR
+          value: /results
+        - name: OUTPUT_FILE
+          value: /results/test_report.json
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: results
+          mountPath: /results
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      restartPolicy: OnFailure

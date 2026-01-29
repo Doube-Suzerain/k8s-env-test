@@ -1,0 +1,73 @@
+---
+# Job 4: cuBLAS 算力测试
+# 可选：随机抽样部分节点进行测试
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cublas-test
+  namespace: default
+spec:
+  # 可调整并行数，建议抽样测试而非全量
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app: cublas-test
+    spec:
+      # 仅调度到 GPU 节点
+      nodeSelector:
+        gpu: "true"
+      volumes:
+      - name: scripts
+        hostPath:
+          path: /path/to/k8s-env-test/scripts  # 替换为实际路径
+      - name: results
+        hostPath:
+          path: /tmp/env-test-results
+      initContainers:
+      # 编译 cuBLAS 测试程序
+      - name: compile-cublas-test
+        image: nvidia/cuda:12.9.0-devel-ubuntu22.04
+        command:
+        - /bin/bash
+        - -c
+        - |
+          cd /scripts
+          nvcc test_cublas.cpp -o test_cublas -lcublasLt -lcublas -lcudart -std=c++17
+          ls -la test_cublas
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+      containers:
+      - name: tester
+        image: sglang:v0.5.7
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "/scripts/run_cublas_test.sh"]
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: OUTPUT_DIR
+          value: /results
+        - name: MATRIX_SIZE
+          value: "8192"
+        - name: GPU_ID
+          value: "0"
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: results
+          mountPath: /results
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "2000m"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "16Gi"
+            cpu: "4000m"
+            nvidia.com/gpu: 1
+      restartPolicy: OnFailure

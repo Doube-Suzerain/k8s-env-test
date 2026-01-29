@@ -1,0 +1,56 @@
+---
+# Job 1: 环境检查 DaemonSet
+# 在每个节点上运行环境检查脚本
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: env-check
+  namespace: default
+  labels:
+    app: env-check
+spec:
+  selector:
+    matchLabels:
+      app: env-check
+  template:
+    metadata:
+      labels:
+        app: env-check
+    spec:
+      # 仅调度到 GPU 节点
+      nodeSelector:
+        gpu: "true"  # 根据实际集群标签调整
+      # 使用 hostPath 共享结果，或使用 PVC
+      volumes:
+      - name: scripts
+        hostPath:
+          path: /path/to/k8s-env-test/scripts  # 替换为实际路径
+      - name: results
+        hostPath:
+          path: /tmp/env-test-results
+      containers:
+      - name: checker
+        image: sglang:v0.5.7
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "/scripts/check_env.sh"]
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: OUTPUT_DIR
+          value: /results
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: results
+          mountPath: /results
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      restartPolicy: Always

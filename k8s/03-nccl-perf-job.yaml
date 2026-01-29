@@ -1,0 +1,84 @@
+---
+# Job 3: NCCL 性能测试 (单节点多卡)
+# 使用 Job 在每台机器上运行 nccl-tests
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nccl-perf-test
+  namespace: default
+spec:
+  # completions 和 parallelism 设置为需要测试的机器数
+  # 可以使用 index 限制并行度
+  completions: 2  # 根据实际机器数调整
+  parallelism: 2
+  completionMode: Indexed
+  template:
+    metadata:
+      labels:
+        app: nccl-perf-test
+    spec:
+      # 仅调度到 GPU 节点
+      nodeSelector:
+        gpu: "true"
+      volumes:
+      - name: scripts
+        hostPath:
+          path: /path/to/k8s-env-test/scripts  # 替换为实际路径
+      - name: results
+        hostPath:
+          path: /tmp/env-test-results
+      - name: nccl-tests
+        emptyDir: {}
+      initContainers:
+      # 拉取并编译 nccl-tests
+      - name: prepare-nccl-tests
+        image: nvidia/cuda:12.9.0-devel-ubuntu22.04
+        command:
+        - /bin/bash
+        - -c
+        - |
+          apt-get update && apt-get install -y git wget
+          git clone https://github.com/NVIDIA/nccl-tests.git /tmp/nccl-tests
+          cd /tmp/nccl-tests
+          git checkout $(git describe --tags `git rev-list --tags --max-count=1`)
+          make MPI=0 CUDA_HOME=/usr/local/cuda -j$(nproc)
+          cp -r build /nccl-tests/
+        volumeMounts:
+        - name: nccl-tests
+          mountPath: /nccl-tests
+      containers:
+      - name: tester
+        image: sglang:v0.5.7
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "/scripts/run_nccl_perf.sh"]
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: JOB_COMPLETION_INDEX
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+        - name: OUTPUT_DIR
+          value: /results
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: results
+          mountPath: /results
+        - name: nccl-tests
+          mountPath: /nccl-tests
+          readOnly: true
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+            # 根据实际 GPU 数量调整
+            nvidia.com/gpu: 8
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+            nvidia.com/gpu: 8
+      restartPolicy: OnFailure
