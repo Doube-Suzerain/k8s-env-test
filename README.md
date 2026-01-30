@@ -23,7 +23,9 @@ k8s-env-test/
 ├── config.sh                   # 集中配置文件
 ├── generate_yaml.sh            # YAML 文件生成脚本
 ├── run_all.sh                  # 一键执行脚本
+├── collect_cluster_info.sh     # 集群信息收集工具
 ├── PLAN.md                     # 设计计划书
+├── K8S_CONFIG_GUIDE.md         # K8S 配置获取指南
 └── README.md                   # 本文件
 ```
 
@@ -33,11 +35,30 @@ k8s-env-test/
 2. **GPU 节点**：集群中有带 GPU 的节点，且配置了正确的标签
 3. **镜像**：`sglang:v0.5.7` 镜像已可用（需包含 PyTorch、CUDA、sglang）
 
+> **提示**：如果你刚接手集群，不熟悉如何获取集群配置信息，可以：
+> - 运行 `./collect_cluster_info.sh` 自动收集集群信息
+> - 参考 [K8S_CONFIG_GUIDE.md](K8S_CONFIG_GUIDE.md) 了解如何获取各项配置参数
+
 ## 快速开始
 
-### 1. 配置参数
+### 1. 收集集群信息（可选）
 
-编辑 `config.sh` 文件，根据实际环境修改配置：
+如果你刚接手集群，可以先运行信息收集脚本了解集群环境：
+
+```bash
+chmod +x collect_cluster_info.sh
+./collect_cluster_info.sh
+```
+
+该脚本会输出：
+- 节点列表和标签
+- GPU 资源情况
+- 命名空间信息
+- 建议的配置参数
+
+### 2. 配置参数
+
+根据收集的信息，编辑 `config.sh` 文件：
 
 ```bash
 # === 基础配置 ===
@@ -68,7 +89,9 @@ IMAGE_NAME="sglang"
 IMAGE_TAG="v0.5.7"
 ```
 
-### 2. 生成 YAML 文件
+> 详细的配置说明请参考：[K8S_CONFIG_GUIDE.md](K8S_CONFIG_GUIDE.md)
+
+### 3. 生成 YAML 文件
 
 配置完成后，运行生成脚本：
 
@@ -78,7 +101,7 @@ IMAGE_TAG="v0.5.7"
 
 这会根据 `config.sh` 的配置自动生成 `k8s/` 目录下的所有 YAML 文件。
 
-### 3. 执行测试
+### 4. 执行测试
 
 ```bash
 # 基础用法
@@ -106,7 +129,7 @@ IMAGE_TAG="v0.5.7"
 | `--cleanup` | 测试完成后清理资源 |
 | `-h, --help` | 显示帮助 |
 
-### 4. 查看结果
+### 5. 查看结果
 
 测试完成后，结果会保存在当前目录：
 
