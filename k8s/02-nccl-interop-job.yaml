@@ -7,8 +7,7 @@ metadata:
   name: nccl-test
   namespace: default
 spec:
-  # replicas 设置为参与测试的节点数
-  replicas: 2  # 根据实际需要调整
+  replicas: 2
   serviceName: nccl-test-headless
   selector:
     matchLabels:
@@ -18,21 +17,27 @@ spec:
       labels:
         app: nccl-test
     spec:
-      # 仅调度到 GPU 节点
-      nodeSelector:
-        gpu: "true"
-      # 使用 hostNetwork 确保节点间网络连通
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - gpu203
+                - gpu217
       hostNetwork: true
       volumes:
       - name: scripts
         hostPath:
-          path: /path/to/k8s-env-test/scripts  # 替换为实际路径
+          path: /data/zyn/k8s-env-test/scripts
       - name: results
         hostPath:
           path: /tmp/env-test-results
       containers:
       - name: tester
-        image: sglang:v0.5.7
+        image: docker.1ms.run/lmsysorg/sglang:v0.5.6.post2
         imagePullPolicy: IfNotPresent
         command: ["/bin/bash", "/scripts/launch_nccl_test.sh"]
         env:
@@ -46,18 +51,22 @@ spec:
               fieldPath: metadata.name
         - name: OUTPUT_DIR
           value: /results
-        # NCCL 环境变量 - 根据实际网络配置调整
+        - name: WORLD_SIZE
+          value: "2"
+        - name: MASTER_PORT
+          value: "13579"
         - name: NCCL_SOCKET_IFNAME
-          value: "ens3np0,enp41s0np0"  # 根据实际网卡名称调整
-        - name: GLOO_SOCKET_IFNAME
-          value: "ens3np0,enp41s0np0"
+          value: "enp25s0np0"
+        - name: NCCL_IB_HCA
+          value: "mlx5_0"
         - name: NCCL_IB_DISABLE
           value: "0"
-        # Rank 从 POD 名称或序号获取
+        - name: GLOO_SOCKET_IFNAME
+          value: "enp25s0np0"
         - name: RANK
           valueFrom:
             fieldRef:
-              fieldPath: metadata.annotations['cni.projectcalico.org/podIP']  # 备用
+              fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
         volumeMounts:
         - name: scripts
           mountPath: /scripts
@@ -66,12 +75,12 @@ spec:
           mountPath: /results
         resources:
           requests:
-            memory: "2Gi"
-            cpu: "1000m"
+            memory: 2Gi
+            cpu: 1000m
             nvidia.com/gpu: 1
           limits:
-            memory: "4Gi"
-            cpu: "2000m"
+            memory: 4Gi
+            cpu: 2000m
             nvidia.com/gpu: 1
   podManagementPolicy: Parallel
 ---

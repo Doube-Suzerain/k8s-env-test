@@ -114,6 +114,17 @@ log_info "命名空间: $NAMESPACE"
 log_info "脚本路径: $SCRIPTS_PATH"
 log_info "结果路径: $RESULTS_PATH"
 
+# 清空结果输出路径（避免旧结果干扰）
+if [ -d "$RESULTS_PATH" ]; then
+  log_info "清空结果输出路径: $RESULTS_PATH"
+  rm -rf "${RESULTS_PATH:?}"/* 2>/dev/null || {
+    log_warn "权限不足，尝试使用 sudo 清空..."
+    sudo rm -rf "${RESULTS_PATH:?}"/*
+  }
+else
+  mkdir -p "$RESULTS_PATH"
+fi
+
 # 确保脚本目录存在
 if [ ! -d "$SCRIPTS_PATH" ]; then
   log_error "脚本目录不存在: $SCRIPTS_PATH"
@@ -209,23 +220,45 @@ kubectl wait --for=condition=complete job/env-test-report --namespace="$NAMESPAC
 # ==================== 收集结果 ====================
 log_info "收集测试结果..."
 
-# 从 report Pod 获取结果
-REPORT_POD=$(kubectl get pod -l app=env-test-report --namespace="$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+# 直接从每个 env-check Pod 收集结果文件到本地
+RESULT_DIR="$(pwd)/collected_results"
+rm -rf "$RESULT_DIR"
+mkdir -p "$RESULT_DIR"
 
-if [ -n "$REPORT_POD" ]; then
-  kubectl exec "$REPORT_POD" --namespace="$NAMESPACE" -- cat /results/test_report.json > test_report.json 2>/dev/null || true
-  kubectl exec "$REPORT_POD" --namespace="$NAMESPACE" -- cat /results/test_report.md > test_report.md 2>/dev/null || true
+PODS=$(kubectl get pods -l app=env-check --namespace="$NAMESPACE" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || echo "")
 
-  log_info "测试报告已保存到:"
-  log_info "  - $(pwd)/test_report.json"
-  log_info "  - $(pwd)/test_report.md"
+for POD in $PODS; do
+  NODE=$(kubectl get pod "$POD" --namespace="$NAMESPACE" -o jsonpath='{.spec.nodeName}')
+  kubectl exec "$POD" --namespace="$NAMESPACE" -- cat "/results/env_check_${NODE}.json" > "$RESULT_DIR/env_check_${NODE}.json" 2>/dev/null || true
+  log_info "  收集 ${NODE} 的结果"
+done
 
-  # 显示摘要
-  if [ -f test_report.json ]; then
-    log_info "测试摘要:"
-    python3 -c "import json; d=json.load(open('test_report.json')); print(json.dumps(d.get('summary', {}), indent=2))" 2>/dev/null || true
-  fi
+# 用本地 Python 脚本生成报告
+export RESULTS_DIR="$RESULT_DIR"
+export OUTPUT_FILE="$(pwd)/test_report.json"
+python3 "$SCRIPTS_PATH/collect_results.py"
+
+# 注意：collect_results.py 会把 md 文件保存到和 json 文件相同的目录（即当前目录）
+# 如果 md 文件不存在（生成失败），创建一个空模板
+if [ ! -f "test_report.md" ]; then
+  echo "# 集群环境测试报告" > test_report.md
+  echo "" >> test_report.md
+  echo "报告生成失败，请检查日志" >> test_report.md
 fi
+
+log_info "测试报告已保存到:"
+log_info "  - $(pwd)/test_report.json"
+log_info "  - $(pwd)/test_report.md"
+
+# 显示摘要
+if [ -f test_report.json ]; then
+  log_info "测试摘要:"
+  python3 -c "import json; d=json.load(open('test_report.json')); print(json.dumps(d.get('summary', {}), indent=2))" 2>/dev/null || true
+fi
+
+# 保留临时文件以便调试
+# rm -rf "$RESULT_DIR"
+log_info "原始结果文件保存在: $RESULT_DIR"
 
 # 取消清理陷阱
 trap - EXIT

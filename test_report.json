@@ -1,0 +1,71 @@
+{
+  "generated_at": "2026-02-03T19:46:34.570092",
+  "summary": {
+    "overall_status": "PASS",
+    "test_status": [
+      "env_check: PASS",
+      "nccl_allreduce: NO_RESULTS",
+      "nccl_perf: NO_RESULTS",
+      "cublas: NO_RESULTS"
+    ],
+    "issues": []
+  },
+  "details": {
+    "env_check": {
+      "status": "success",
+      "total_nodes": 2,
+      "nodes": [
+        {
+          "name": "gpu203",
+          "gpu_count": 8,
+          "driver_version": "580.95.05",
+          "cuda_version": "unknown",
+          "python_version": "Python 3.12.3",
+          "torch_version": "2.9.1+cu129",
+          "cuda_available": true,
+          "checks": {
+            "nvidia_smi": "pass",
+            "cuda_available": "pass",
+            "sglang_import": "pass"
+          }
+        },
+        {
+          "name": "gpu217",
+          "gpu_count": 8,
+          "driver_version": "580.95.05",
+          "cuda_version": "unknown",
+          "python_version": "Python 3.12.3",
+          "torch_version": "2.9.1+cu129",
+          "cuda_available": true,
+          "checks": {
+            "nvidia_smi": "pass",
+            "cuda_available": "pass",
+            "sglang_import": "pass"
+          }
+        }
+      ],
+      "issues": [],
+      "consistency": {
+        "driver_consistent": true,
+        "cuda_consistent": true,
+        "torch_consistent": true,
+        "driver_versions": [
+          "580.95.05"
+        ],
+        "cuda_versions": [],
+        "torch_versions": [
+          "2.9.1+cu129"
+        ]
+      }
+    },
+    "nccl_allreduce": {
+      "status": "no_results"
+    },
+    "nccl_perf": {
+      "status": "no_results"
+    },
+    "cublas": {
+      "status": "no_results"
+    }
+  }
+}

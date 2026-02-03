@@ -1,0 +1,136 @@
+{
+  "node_name": "gpu217",
+  "timestamp": "2026-02-03T11:44:31.525289",
+  "nvidia_driver_version": "580.95.05",
+  "cuda_version": "unknown",
+  "gpu_name": "NVIDIA H200",
+  "gpu_count": 8,
+  "nvidia_smi_available": true,
+  "python_version": "Python 3.12.3",
+  "python_exec": "unknown",
+  "conda_prefix": "",
+  "virtual_env": "",
+  "pip_version": "pip 25.3 from /usr/local/lib/python3.12/dist-packages/pip (python 3.12)",
+  "packages": {
+    "sglang": "0.5.6.post2",
+    "torch": "2.9.1+cu129",
+    "torchvision": "0.24.1+cu129",
+    "torchaudio": "2.9.1+cu129",
+    "transformers": "4.57.1",
+    "tokenizers": "0.22.1",
+    "safetensors": "0.7.0",
+    "huggingface_hub": "0.36.0",
+    "triton": "3.5.1",
+    "fastapi": "0.124.2",
+    "uvicorn": "0.38.0",
+    "pydantic": "2.12.5",
+    "starlette": "0.50.0"
+  },
+  "torch_details": {
+    "torch_version": "2.9.1+cu129",
+    "cuda_version": "12.9",
+    "cuda_available": true,
+    "gpu_count": 8,
+    "cudnn_version": 91600,
+    "gpus": [
+      {
+        "id": 0,
+        "name": "NVIDIA H200",
+        "total_memory_gb": 139.80084228515625
+      },
+      {
+        "id": 1,
+        "name": "NVIDIA H200",
+        "total_memory_gb": 139.80084228515625
+      },
+      {
+        "id": 2,
+        "name": "NVIDIA H200",
+        "total_memory_gb": 139.80084228515625
+      },
+      {
+        "id": 3,
+        "name": "NVIDIA H200",
+        "total_memory_gb": 139.80084228515625
+      },
+      {
+        "id": 4,
+        "name": "NVIDIA H200",
+        "total_memory_gb": 139.80084228515625
+      },
+      {
+        "id": 5,
+        "name": "NVIDIA H200",
+        "total_memory_gb": 139.80084228515625
+      },
+      {
+        "id": 6,
+        "name": "NVIDIA H200",
+        "total_memory_gb": 139.80084228515625
+      },
+      {
+        "id": 7,
+        "name": "NVIDIA H200",
+        "total_memory_gb": 139.80084228515625
+      }
+    ]
+  },
+  "env_vars": {
+    "NVIDIA_VISIBLE_DEVICES": "void"
+  },
+  "pip_freeze": [
+    {
+      "package": "fastapi",
+      "version": "0.124.2"
+    },
+    {
+      "package": "huggingface-hub",
+      "version": "0.36.0"
+    },
+    {
+      "package": "pydantic",
+      "version": "2.12.5"
+    },
+    {
+      "package": "safetensors",
+      "version": "0.7.0"
+    },
+    {
+      "package": "starlette",
+      "version": "0.50.0"
+    },
+    {
+      "package": "tokenizers",
+      "version": "0.22.1"
+    },
+    {
+      "package": "torch",
+      "version": "2.9.1"
+    },
+    {
+      "package": "torchaudio",
+      "version": "2.9.1"
+    },
+    {
+      "package": "torchvision",
+      "version": "0.24.1"
+    },
+    {
+      "package": "transformers",
+      "version": "4.57.1"
+    },
+    {
+      "package": "triton",
+      "version": "3.5.1"
+    },
+    {
+      "package": "uvicorn",
+      "version": "0.38.0"
+    }
+  ],
+  "checks": {
+    "nvidia_smi": "pass",
+    "cuda_available": "pass",
+    "sglang_import": "pass"
+  }
+}

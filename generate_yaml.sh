@@ -51,12 +51,41 @@ cat_volumes() {
 EOF
 }
 
-# 生成 nodeSelector 部分
+# 生成 nodeSelector 或 nodeAffinity 部分
 cat_node_selector() {
-  cat <<EOF
+  # 如果配置了 NODE_NAMES，使用 nodeAffinity 匹配多个节点
+  if [ -n "${NODE_NAMES:-}" ]; then
+    # 构建节点列表
+    local values_list=""
+    local first=true
+    for node in $NODE_NAMES; do
+      if [ "$first" = true ]; then
+        first=false
+        values_list="                - ${node}"
+      else
+        values_list="${values_list}
+                - ${node}"
+      fi
+    done
+
+    cat <<EOF
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+${values_list}
+EOF
+  else
+    # 否则使用简单的 nodeSelector
+    cat <<EOF
       nodeSelector:
         ${NODE_SELECTOR_KEY}: "${NODE_SELECTOR_VALUE}"
 EOF
+  fi
 }
 
 # 生成 NCCL 环境变量

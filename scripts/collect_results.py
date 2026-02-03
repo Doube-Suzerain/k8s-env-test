@@ -17,6 +17,8 @@ def load_json(filepath):
         with open(filepath, "r") as f:
             return json.load(f)
     except Exception as e:
+        import sys
+        print(f"ERROR: Failed to parse JSON file '{filepath}': {e}", file=sys.stderr)
         return {"error": str(e), "file": str(filepath)}
 
 
@@ -291,16 +293,57 @@ def main():
         json.dump(report, f, indent=2)
     print(f"JSON 报告已保存到: {output_file}")
 
-    # 打印 Markdown 报告
+    # 打印 Markdown 报告到标准输出
     print_markdown_report(report)
 
-    # 保存 Markdown 报告
+    # 保存 Markdown 报告到与 JSON 相同的目录
     md_file = output_file.replace(".json", ".md")
     with open(md_file, "w") as f:
         f.write("# 集群环境测试报告\n\n")
         f.write(f"生成时间: {report['generated_at']}\n\n")
         f.write(f"总体状态: {report['summary']['overall_status']}\n\n")
-        # ... (更多 Markdown 内容)
+
+        # 测试状态
+        f.write("## 测试状态\n")
+        for status in report['summary']['test_status']:
+            f.write(f"  - {status}\n")
+        f.write("\n")
+
+        # 发现的问题
+        if report['summary']['issues']:
+            f.write("## 发现的问题\n")
+            for issue in report['summary']['issues']:
+                f.write(f"  - {issue}\n")
+            f.write("\n")
+
+        # 环境检查详情
+        env = report['details']['env_check']
+        if env.get('status') != 'no_results':
+            f.write("## 环境检查\n")
+            f.write(f"  检测节点数: {env['total_nodes']}\n")
+            f.write(f"  驱动版本一致性: {'是' if env['consistency']['driver_consistent'] else '否'}\n")
+            f.write(f"  CUDA 版本一致性: {'是' if env['consistency']['cuda_consistent'] else '否'}\n")
+            f.write(f"  Torch 版本一致性: {'是' if env['consistency']['torch_consistent'] else '否'}\n")
+            if env['consistency']['driver_versions']:
+                f.write(f"  驱动版本: {', '.join(env['consistency']['driver_versions'])}\n")
+            if env['consistency']['cuda_versions']:
+                f.write(f"  CUDA 版本: {', '.join(env['consistency']['cuda_versions'])}\n")
+            if env['consistency']['torch_versions']:
+                f.write(f"  Torch 版本: {', '.join(env['consistency']['torch_versions'])}\n")
+            f.write("\n")
+
+            # 节点详情
+            f.write("### 节点详情\n")
+            for node in env['nodes']:
+                f.write(f"#### {node['name']}\n")
+                f.write(f"  - GPU 数量: {node['gpu_count']}\n")
+                f.write(f"  - 驱动版本: {node['driver_version']}\n")
+                f.write(f"  - CUDA 版本: {node['cuda_version']}\n")
+                f.write(f"  - Python 版本: {node['python_version']}\n")
+                f.write(f"  - Torch 版本: {node['torch_version']}\n")
+                f.write(f"  - CUDA 可用: {node['cuda_available']}\n")
+                f.write("\n")
+
     print(f"Markdown 报告已保存到: {md_file}")
 
     return 0 if report['summary']['overall_status'] == 'PASS' else 1

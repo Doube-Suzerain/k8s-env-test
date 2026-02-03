@@ -1,14 +1,11 @@
 ---
 # Job 5: 报告汇总
-# 收集所有测试结果并生成统一报告
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: env-test-report
   namespace: default
 spec:
-  # 确保在其他测试完成后运行
-  # 可以使用 kubectl wait 或手动触发
   template:
     metadata:
       labels:
@@ -17,13 +14,13 @@ spec:
       volumes:
       - name: scripts
         hostPath:
-          path: /path/to/k8s-env-test/scripts  # 替换为实际路径
+          path: /data/zyn/k8s-env-test/scripts
       - name: results
         hostPath:
           path: /tmp/env-test-results
       containers:
       - name: reporter
-        image: sglang:v0.5.7
+        image: docker.1ms.run/lmsysorg/sglang:v0.5.6.post2
         imagePullPolicy: IfNotPresent
         command: ["/usr/bin/python3", "/scripts/collect_results.py"]
         env:

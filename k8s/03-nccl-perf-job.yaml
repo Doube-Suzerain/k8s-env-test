@@ -7,9 +7,7 @@ metadata:
   name: nccl-perf-test
   namespace: default
 spec:
-  # completions 和 parallelism 设置为需要测试的机器数
-  # 可以使用 index 限制并行度
-  completions: 2  # 根据实际机器数调整
+  completions: 2
   parallelism: 2
   completionMode: Indexed
   template:
@@ -17,20 +15,26 @@ spec:
       labels:
         app: nccl-perf-test
     spec:
-      # 仅调度到 GPU 节点
-      nodeSelector:
-        gpu: "true"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - gpu203
+                - gpu217
       volumes:
       - name: scripts
         hostPath:
-          path: /path/to/k8s-env-test/scripts  # 替换为实际路径
+          path: /data/zyn/k8s-env-test/scripts
       - name: results
         hostPath:
           path: /tmp/env-test-results
       - name: nccl-tests
         emptyDir: {}
       initContainers:
-      # 拉取并编译 nccl-tests
       - name: prepare-nccl-tests
         image: nvidia/cuda:12.9.0-devel-ubuntu22.04
         command:
@@ -48,7 +52,7 @@ spec:
           mountPath: /nccl-tests
       containers:
       - name: tester
-        image: sglang:v0.5.7
+        image: docker.1ms.run/lmsysorg/sglang:v0.5.6.post2
         imagePullPolicy: IfNotPresent
         command: ["/bin/bash", "/scripts/run_nccl_perf.sh"]
         env:
@@ -62,6 +66,8 @@ spec:
               fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
         - name: OUTPUT_DIR
           value: /results
+        - name: GPU_COUNT
+          value: "8"
         volumeMounts:
         - name: scripts
           mountPath: /scripts
@@ -73,12 +79,11 @@ spec:
           readOnly: true
         resources:
           requests:
-            memory: "4Gi"
-            cpu: "2000m"
-            # 根据实际 GPU 数量调整
+            memory: 4Gi
+            cpu: 2000m
             nvidia.com/gpu: 8
           limits:
-            memory: "8Gi"
-            cpu: "4000m"
+            memory: 8Gi
+            cpu: 4000m
             nvidia.com/gpu: 8
       restartPolicy: OnFailure
